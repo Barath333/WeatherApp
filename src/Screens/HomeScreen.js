@@ -18,11 +18,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useNavigation } from '@react-navigation/native';
 
 const HomeScreen = () => {
+  const navigation = useNavigation();
   const [weather, setWeather] = useState(null);
   const [city, setCity] = useState();
-  const [Favourite, setFavourite] = useState([]);
+  const [favorites, setFavourite] = useState([]);
   const [loading, setLoading] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
   const scaleAnim = useState(new Animated.Value(0.8))[0];
@@ -36,11 +38,23 @@ const HomeScreen = () => {
 
   useEffect(() => {
     const loadFav = async () => {
-      const saved = await AsyncStorage.getItem('Favourite');
+      const saved = await AsyncStorage.getItem('favorites');
       if (saved) setFavourite(JSON.parse(saved));
     };
     loadFav();
   }, []);
+
+  useEffect(() => {
+    const loadParams = async () => {
+      const params = navigation.getParam('city');
+      if (params) {
+        setCity(params);
+        await getCityWeather(params);
+      }
+    };
+
+    loadParams();
+  }, [navigation]);
 
   useEffect(() => {
     if (weather) {
@@ -103,7 +117,7 @@ const HomeScreen = () => {
     );
   };
 
-  const getCityWeather = async () => {
+  const getCityWeather = async (cityName = city) => {
     if (!city) return;
     setLoading(true);
     try {
@@ -128,7 +142,7 @@ const HomeScreen = () => {
 
   const saveFavorite = async () => {
     if (!weather) return;
-    const newFav = [...new Set([...Favourite, weather.name])];
+    const newFav = [...new Set([...favorites, weather.name])];
     setFavourite(newFav);
     await AsyncStorage.setItem('favorites', JSON.stringify(newFav));
   };
@@ -160,7 +174,15 @@ const HomeScreen = () => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.title}>Weather Forecast</Text>
+        <View style={styles.headerContainer}>
+          <Text style={styles.title}>Weather Forecast</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Favorites')}
+            style={styles.favoritesButton}
+          >
+            <MaterialIcons name="favorite" size={24} color="#fff" />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.searchContainer}>
           <TextInput
@@ -292,6 +314,14 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: 'center',
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 30,
+    position: 'relative', // Needed for absolute positioning of button
+  },
   searchContainer: {
     flexDirection: 'row',
     width: '100%',
@@ -416,16 +446,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
-  favoritesContainer: {
-    width: '100%',
-    marginTop: 10,
-  },
-  sectionTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
+
   favoriteItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -438,6 +459,21 @@ const styles = StyleSheet.create({
   favoriteText: {
     color: '#fff',
     fontSize: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 30,
+  },
+  favoritesButton: {
+    position: 'absolute', // Position absolutely within header
+    right: 0, // Place on the right side
+    padding: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    top: 3,
   },
 });
 

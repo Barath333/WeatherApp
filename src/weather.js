@@ -16,6 +16,7 @@ export const getWeather = async location => {
         units: 'metric',
         appid: API_KEY,
       },
+      timeout: 5000,
     });
     return response.data;
   } catch (error) {
