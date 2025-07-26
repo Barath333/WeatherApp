@@ -1,5 +1,5 @@
 // src/Screens/FavoritesScreen.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRoute } from '@react-navigation/native';
+import { useFocusEffect, useRoute } from '@react-navigation/native';
 
 const FavoritesScreen = ({ navigation }) => {
   const [favorites, setFavorites] = useState([]);
@@ -23,15 +23,6 @@ const FavoritesScreen = ({ navigation }) => {
     };
     loadFont();
 
-    const loadFavorites = async () => {
-      const saved = await AsyncStorage.getItem('favorites');
-      if (saved) {
-        setFavorites(JSON.parse(saved));
-      }
-    };
-
-    loadFavorites();
-
     // Animate screen entrance
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -39,16 +30,33 @@ const FavoritesScreen = ({ navigation }) => {
       useNativeDriver: true,
     }).start();
   }, []);
+ 
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadFavorites = async () => {
+        const saved = await AsyncStorage.getItem('favorites');
+        if (saved) {
+          setFavorites(JSON.parse(saved));
+        } else {
+          setFavorites([]);
+        }
+      };
+      loadFavorites();
+    }, []),
+  );
 
   const clearFavorites = async () => {
     await AsyncStorage.removeItem('favorites');
     setFavorites([]);
   };
 
-  const removeFavorite = async city => {
-    const newFavorites = favorites.filter(fav => fav !== city);
-    setFavorites(newFavorites);
-    await AsyncStorage.setItem('favorites', JSON.stringify(newFavorites));
+  const removeFavorite = city => {
+    setFavorites(prevFavorites => {
+      const newFavorites = prevFavorites.filter(fav => fav !== city);
+      AsyncStorage.setItem('favorites', JSON.stringify(newFavorites));
+      return newFavorites;
+    });
   };
 
   return (

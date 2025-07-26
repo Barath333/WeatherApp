@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -36,13 +36,15 @@ const HomeScreen = () => {
     loadFont();
   }, []);
 
-  useEffect(() => {
-    const loadFav = async () => {
-      const saved = await AsyncStorage.getItem('favorites');
-      if (saved) setFavourite(JSON.parse(saved));
-    };
-    loadFav();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const loadFav = async () => {
+        const saved = await AsyncStorage.getItem('favorites');
+        if (saved) setFavourite(JSON.parse(saved));
+      };
+      loadFav();
+    }, []),
+  );
 
   useEffect(() => {
     const loadParams = async () => {
@@ -142,7 +144,11 @@ const HomeScreen = () => {
 
   const saveFavorite = async () => {
     if (!weather) return;
-    const newFav = [...new Set([...favorites, weather.name])];
+
+    // Check if already exists
+    if (favorites.includes(weather.name)) return;
+
+    const newFav = [...favorites, weather.name];
     setFavourite(newFav);
     await AsyncStorage.setItem('favorites', JSON.stringify(newFav));
   };
