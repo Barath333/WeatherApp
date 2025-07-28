@@ -19,6 +19,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import NetInfo from '@react-native-community/netinfo';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -28,6 +29,21 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(false);
   const fadeAnim = useState(new Animated.Value(0))[0];
   const scaleAnim = useState(new Animated.Value(0.8))[0];
+  const [isOnline, setIsOnline] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener(state => {
+      setIsOnline(state.isConnected);
+      if (!state.isConnected) {
+        setError('No internet connection');
+      } else if (error === 'No internet connection') {
+        setError('');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const loadFont = async () => {
@@ -92,31 +108,39 @@ const HomeScreen = () => {
   };
 
   const getLocationWeather = async () => {
-    const hasPermission = await requestPermissions();
-    if (!hasPermission) {
-      console.warn('Permission is not granted');
-      console.log('Failed');
+    if (!isOnline) {
+      setError('No internet connection');
       return;
     }
+    try {
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) {
+        console.warn('Permission is not granted');
+        console.log('Failed');
+        return;
+      }
 
-    setLoading(true);
-    Geolocation.getCurrentPosition(
-      async position => {
-        try {
-          const data = await getWeather(position.coords);
-          setWeather(data);
-        } catch (e) {
-          console.error(e);
-        } finally {
+      setLoading(true);
+      Geolocation.getCurrentPosition(
+        async position => {
+          try {
+            const data = await getWeather(position.coords);
+            setWeather(data);
+          } catch (e) {
+            console.error(e);
+          } finally {
+            setLoading(false);
+          }
+        },
+        error => {
+          console.error(error);
           setLoading(false);
-        }
-      },
-      error => {
-        console.error(error);
-        setLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 1500 },
-    );
+        },
+        { enableHighAccuracy: true, timeout: 1500 },
+      );
+    } catch (e) {
+      setError('Failed to get location data');
+    }
   };
 
   const getCityWeather = async (cityName = city) => {
@@ -179,6 +203,11 @@ const HomeScreen = () => {
       colors={['#4c669f', '#3b5998', '#192f6a']}
       style={styles.container}
     >
+      {!isOnline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineText}>No internet connection</Text>
+        </View>
+      )}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.headerContainer}>
           <Text style={styles.title}>Weather Forecast</Text>
@@ -480,6 +509,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.1)',
     top: 3,
+  },
+  offlineBanner: {
+    backgroundColor: '#ff6b6b',
+    padding: 10,
+    width: '100%',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  offlineText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  errorText: {
+    color: '#ff6b6b',
+    textAlign: 'center',
+    marginVertical: 10,
+    fontWeight: 'bold',
   },
 });
 
