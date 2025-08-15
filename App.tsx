@@ -25,7 +25,7 @@ const Stack = createNativeStackNavigator();
 
 type RootStackParamList = {
   Splash: undefined;
-  'Weather App': undefined;
+  'Bara Weather': undefined;
 };
 
 type SplashScreenProps = NativeStackScreenProps<RootStackParamList, 'Splash'>;
@@ -55,7 +55,7 @@ const SplashScreen = ({ navigation }: SplashScreenProps) => {
           useNativeDriver: true,
         }),
       ]).start(() => {
-        navigation.replace('Weather App');
+        navigation.replace('Bara Weather');
       });
     }, 2000);
     return () => clearTimeout(timer);
@@ -80,7 +80,7 @@ const SplashScreen = ({ navigation }: SplashScreenProps) => {
           source={require('./assets/weather-icon.png')}
           style={styles.splashIcon}
         /> */}
-        <Text style={styles.splashText}>Weather Forecast</Text>
+        <Text style={styles.splashText}>BaraWeather</Text>
       </Animated.View>
     </LinearGradient>
   );
@@ -120,7 +120,11 @@ function App() {
             component={SplashScreen}
             options={{ headerShown: false }}
           />
-          <Stack.Screen name="Weather App" component={HomeScreen} />
+          <Stack.Screen
+            name="Bara Weather"
+            component={HomeScreen}
+            options={{ headerShown: false }}
+          />
           <Stack.Screen name="Favorites" component={FavoritesScreen} />
         </Stack.Navigator>
       </NavigationContainer>
